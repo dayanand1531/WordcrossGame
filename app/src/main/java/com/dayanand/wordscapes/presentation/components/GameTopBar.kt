@@ -37,7 +37,7 @@ fun GameTopBar(
     modifier: Modifier = Modifier
 ) {
     val buttonShape = RoundedCornerShape(12.dp)
-    val canUseHint = hintsRemaining > 0 && score >= 100
+    val isHintAvailable = hintsRemaining > 0 || score >= 100
 
     val scoreScaleAnim = remember { Animatable(1f) }
     LaunchedEffect(score) {
@@ -138,8 +138,9 @@ fun GameTopBar(
             }
 
             // Hint Button
-            val hintBgColor = if (canUseHint) Color(0xFFFFB300) else Color(0xFF37474F)
-            val hintTextColor = if (canUseHint) Color(0xFF1E2A38) else Color.White.copy(alpha = 0.5f)
+            val hintBgColor = if (isHintAvailable) Color(0xFFFFB300) else Color(0xFF37474F)
+            val hintTextColor = if (isHintAvailable) Color(0xFF1E2A38) else Color.White.copy(alpha = 0.5f)
+            val hintLabel = if (hintsRemaining > 0) "💡 FREE HINT" else "💡 HINT (-100)"
 
             Box(
                 modifier = Modifier
@@ -150,7 +151,7 @@ fun GameTopBar(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "💡 HINT: $hintsRemaining (-100)",
+                    text = hintLabel,
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp,
                     color = hintTextColor

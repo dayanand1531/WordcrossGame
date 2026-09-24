@@ -64,7 +64,7 @@ fun ShowOneButton(
                 fontSize = 15.sp
             )
             Text(
-                text = "Show One × $showOneRemaining",
+                text = "Swap One × $showOneRemaining",
                 fontWeight = FontWeight.Bold,
                 fontSize = 14.sp,
                 color = textColor

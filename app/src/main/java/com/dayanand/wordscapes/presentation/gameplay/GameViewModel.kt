@@ -88,7 +88,13 @@ class GameViewModel(
                     persistedTotalScore
                 }
 
-                val hints: Int = savedStateHandle[KEY_HINTS_REMAINING] ?: 3
+                // Each level provides 1 free hint by default
+                val hints: Int = if (savedLevelId == level.id && savedStateHandle.contains(KEY_HINTS_REMAINING)) {
+                    savedStateHandle[KEY_HINTS_REMAINING] ?: 1
+                } else {
+                    1
+                }
+
                 val showOneRem: Int = savedStateHandle[KEY_SHOW_ONE_REMAINING] ?: GameUiState.DEFAULT_SHOW_ONE_LIMIT
 
                 val savedLetterOrderStr = if (savedLevelId == level.id) {
@@ -175,13 +181,10 @@ class GameViewModel(
                 ?: levelRepository.getLevel(currentState.levelId)
                 ?: return@launch
 
-            if (currentState.score < 100) {
-                showHintFeedback("Need 100 points for a hint! (Score: ${currentState.score})")
-                return@launch
-            }
+            val hasFreeHint = currentState.hintsRemaining > 0
 
-            if (currentState.hintsRemaining <= 0) {
-                showHintFeedback("No hints remaining")
+            if (!hasFreeHint && currentState.score < 100) {
+                showHintFeedback("Need 100 points for a hint! (Score: ${currentState.score})")
                 return@launch
             }
 
@@ -193,8 +196,18 @@ class GameViewModel(
 
             when (result) {
                 is UseHintResult.Success -> {
-                    val newHints = (currentState.hintsRemaining - 1).coerceAtLeast(0)
-                    val newScore = (currentState.score - 100).coerceAtLeast(0)
+                    val newHints: Int
+                    val newScore: Int
+
+                    if (hasFreeHint) {
+                        // Consume 1 free hint provided by the level (0 points deducted)
+                        newHints = (currentState.hintsRemaining - 1).coerceAtLeast(0)
+                        newScore = currentState.score
+                    } else {
+                        // Consume additional hint with 100 points deduction
+                        newHints = 0
+                        newScore = (currentState.score - 100).coerceAtLeast(0)
+                    }
 
                     savedStateHandle[KEY_HINTS_REMAINING] = newHints
                     savedStateHandle[KEY_SCORE] = newScore

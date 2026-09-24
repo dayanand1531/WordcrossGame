@@ -81,11 +81,41 @@ class GameViewModelTest {
     }
 
     @Test
-    fun testUseHintWithSufficientScoreDeducts100PointsAnd1Hint() = runTest {
+    fun testLevelProvidesOneFreeHintWithZeroScoreDeduction() = runTest {
         val savedStateHandle = SavedStateHandle(
             mapOf(
                 "saved_level_id" to 1,
-                "saved_score" to 250
+                "saved_score" to 0,
+                "saved_hints_remaining" to 1
+            )
+        )
+        val viewModel = GameViewModel(
+            savedStateHandle = savedStateHandle,
+            levelRepository = multiLevelRepo,
+            userPreferencesRepository = fakeUserPrefsRepository,
+            validateWordUseCase = ValidateWordUseCase(),
+            calculateScoreUseCase = CalculateScoreUseCase(),
+            gameEngine = GameEngine()
+        )
+
+        viewModel.initLevel(1)
+
+        assertEquals(0, viewModel.uiState.value.score)
+        assertEquals(1, viewModel.uiState.value.hintsRemaining)
+
+        viewModel.useHint()
+
+        assertEquals(0, viewModel.uiState.value.score)
+        assertEquals(0, viewModel.uiState.value.hintsRemaining)
+    }
+
+    @Test
+    fun testConsumingHintAfterFreeHintDeducts100Points() = runTest {
+        val savedStateHandle = SavedStateHandle(
+            mapOf(
+                "saved_level_id" to 1,
+                "saved_score" to 250,
+                "saved_hints_remaining" to 0
             )
         )
         val viewModel = GameViewModel(
@@ -100,22 +130,21 @@ class GameViewModelTest {
         viewModel.initLevel(1)
 
         assertEquals(250, viewModel.uiState.value.score)
-        assertEquals(3, viewModel.uiState.value.hintsRemaining)
+        assertEquals(0, viewModel.uiState.value.hintsRemaining)
 
         viewModel.useHint()
 
         assertEquals(150, viewModel.uiState.value.score)
-        assertEquals(2, viewModel.uiState.value.hintsRemaining)
-        assertEquals(150, savedStateHandle.get<Int>("saved_score"))
-        assertEquals(2, savedStateHandle.get<Int>("saved_hints_remaining"))
+        assertEquals(0, viewModel.uiState.value.hintsRemaining)
     }
 
     @Test
-    fun testUseHintWithScoreLessThan100IsDisabled() = runTest {
+    fun testConsumingHintAfterFreeHintDisabledIfScoreLessThan100() = runTest {
         val savedStateHandle = SavedStateHandle(
             mapOf(
                 "saved_level_id" to 1,
-                "saved_score" to 50
+                "saved_score" to 50,
+                "saved_hints_remaining" to 0
             )
         )
         val viewModel = GameViewModel(
@@ -130,12 +159,12 @@ class GameViewModelTest {
         viewModel.initLevel(1)
 
         assertEquals(50, viewModel.uiState.value.score)
-        assertEquals(3, viewModel.uiState.value.hintsRemaining)
+        assertEquals(0, viewModel.uiState.value.hintsRemaining)
 
         viewModel.useHint()
 
         assertEquals(50, viewModel.uiState.value.score)
-        assertEquals(3, viewModel.uiState.value.hintsRemaining)
+        assertEquals(0, viewModel.uiState.value.hintsRemaining)
         assertEquals("Need 100 points for a hint! (Score: 50)", viewModel.uiState.value.hintFeedbackMessage)
     }
 
