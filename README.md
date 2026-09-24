@@ -28,7 +28,7 @@ The application follows **Clean Architecture** principles and **MVVM with Unidir
 ### Key Highlights:
 - **UI State (`GameUiState`)**: Immutably models screen state (`grid`, `letters`, `selectedIndices`, `score`, `hintsRemaining`, `showOneRemaining`, `isCompleted`, `isLevelCompleting`, `isGestureActive`).
 - **State Preservation**: Uses `SavedStateHandle` in `GameViewModel` so active level progress, found words, bonus words, scores, hint counts, and shuffled letter orders survive configuration changes (rotation) and process death.
-- **Local Persistence**: `UserPreferencesRepository` uses **DataStore Preferences** to persist highest unlocked levels, completed level sets, and total score across app sessions.
+- **Cumulative Persistence**: `UserPreferencesRepository` uses **DataStore Preferences** to persist highest unlocked levels, completed level sets, and total cumulative score across levels and app sessions.
 - **One-Time Event Streams**: `Channel<GameNavigationEvent>` handles one-time navigation events (e.g. `AutoNavigateToNextLevel`) without re-triggering navigation during recompositions or rotation.
 - **Lifecycle-Aware Screen Insets & Keep-Screen-On**: Edge-to-edge window drawing with `statusBarsPadding()`/`navigationBarsPadding()` and `KeepScreenOn` using `FLAG_KEEP_SCREEN_ON` during gameplay.
 
@@ -53,7 +53,7 @@ The circular letter wheel and drag line rendering are built using Compose **Canv
    - Renders a dynamic line segment tracking from the last selected letter node to the user's active finger location while dragging.
 4. **Gesture Safety**:
    - `LetterWheel` reports active gesture lifecycle via `onGestureActive(Boolean)`.
-   - Power-ups like **Show One** are safely disabled while a swipe gesture is active.
+   - Power-ups like **Swap One** are safely disabled while a swipe gesture is active.
 
 ---
 
@@ -91,11 +91,13 @@ Level definitions are stored in `app/src/main/assets/levels.json` with 15 fully 
 
 ## ⚡ 4. Gameplay Mechanics & Power-Ups
 
-- **Limited Hint System (`💡 HINT: 3`)**:
-  - Deducts **100 points** from total score and **1 hint** from remaining hints.
-  - Identifies an unsolved crossword word and permanently reveals one of its cells with a spring scale-and-highlight animation.
-  - Disabled when score $< 100$ or hints $= 0$.
-- **Show One Power-Up (`🔄 Show One × 3`)**:
+- **Free Hint per Level & Additional Hint Cost**:
+  - Each level provides **1 Free Hint** (`💡 FREE HINT`).
+  - Using the free hint costs **0 points** (no score deduction).
+  - After consuming the free hint, additional hints cost **100 points** (`💡 HINT (-100)`).
+  - Additional hints require a cumulative score $\ge 100$ and deduct 100 points from the player's score.
+  - Permanently reveals one cell of an unsolved word with a spring scale-and-highlight animation.
+- **Swap One Power-Up (`🔄 Swap One × 3`)**:
   - Automatically swaps the wheel display positions of two letters with a smooth spring animation.
   - Does not alter crossword words, level data, or player score.
   - Usage limit of 3 per level; disabled during active swipe gestures.
@@ -111,7 +113,7 @@ Unit tests are located in `app/src/test/java/com/dayanand/wordscapes/`:
 - `ValidateWordUseCaseTest`: Validates crossword words, bonus words, duplicate words, and invalid words.
 - `CalculateScoreUseCaseTest`: Validates scoring logic for crossword words, bonus words, and level completion bonuses.
 - `GameEngineTest`: Validates grid matrix generation, cell revealing, hint application, and level completion checks.
-- `GameViewModelTest`: Validates state management, 100-point hint deductions, Show One letter swapping, gesture locks, `SavedStateHandle` restoration, and automatic next-level navigation events.
+- `GameViewModelTest`: Validates state management, 1 free hint per level, 100-point additional hint deductions, Swap One letter swapping, gesture locks, `SavedStateHandle` restoration, and automatic next-level navigation events.
 
 To run all unit tests:
 ```bash
